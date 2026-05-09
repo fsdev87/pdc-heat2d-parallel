@@ -67,3 +67,7 @@ vcpkg_installed/
 # test output & cache
 Testing/
 .cache/
+
+# MD files
+PDC_PROJECT_MASTERPLAN.md
+CLAUDE.md
