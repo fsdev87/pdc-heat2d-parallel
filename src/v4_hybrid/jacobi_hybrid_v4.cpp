@@ -59,20 +59,20 @@ void set_boundary_local_2d(std::vector<double>& u,
                            bool on_top, bool on_bottom,
                            bool on_left, bool on_right) {
     // Top boundary row (ghost row 0)
+    // Only iterate over interior columns, not ghost columns
     if (on_top) {
-        for (int j = 0; j <= local_cols + 1; j++) {
-            int global_col = col_offset + j - 1;
-            if (global_col < 0 || global_col > N + 1) continue;
+        for (int j = 1; j <= local_cols; j++) {
+            int global_col = col_offset + j;
             double x = (double)global_col / (N + 1);
             u[IDX(0, j)] = sin(PI * x) * exp(-PI);
         }
     }
 
     // Bottom boundary row
+    // Only iterate over interior columns, not ghost columns
     if (on_bottom) {
-        for (int j = 0; j <= local_cols + 1; j++) {
-            int global_col = col_offset + j - 1;
-            if (global_col < 0 || global_col > N + 1) continue;
+        for (int j = 1; j <= local_cols; j++) {
+            int global_col = col_offset + j;
             double x = (double)global_col / (N + 1);
             u[IDX(local_rows + 1, j)] = sin(PI * x);
         }
@@ -96,8 +96,8 @@ double compute_max_error_local_2d(const std::vector<double>& u,
     #pragma omp parallel for reduction(max:max_err) collapse(2) schedule(static)
     for (int i = 1; i <= local_rows; i++) {
         for (int j = 1; j <= local_cols; j++) {
-            int global_row = row_offset + i - 1;
-            int global_col = col_offset + j - 1;
+            int global_row = row_offset + i;
+            int global_col = col_offset + j;
             double y = 1.0 - (double)global_row / (double)(N + 1);
             double x = (double)global_col / (N + 1);
             double analytical = sin(PI * x) * exp(-PI * y);

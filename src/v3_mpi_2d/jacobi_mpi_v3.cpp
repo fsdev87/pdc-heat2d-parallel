@@ -77,10 +77,10 @@ void set_boundary_local_2d(std::vector<double>& u,
                            bool on_top, bool on_bottom,
                            bool on_left, bool on_right) {
     // Top boundary row (ghost row 0) — only if this process is on top edge
+    // Only iterate over interior columns (j=1 to local_cols), not ghost columns
     if (on_top) {
-        for (int j = 0; j <= local_cols + 1; j++) {
-            int global_col = col_offset + j - 1;  // -1 because j=1 is first interior col
-            if (global_col < 0 || global_col > N + 1) continue;
+        for (int j = 1; j <= local_cols; j++) {
+            int global_col = col_offset + j;
             double x = (double)global_col / (N + 1);
             u[IDX(0, j)] = sin(PI * x) * exp(-PI);
         }
@@ -88,15 +88,15 @@ void set_boundary_local_2d(std::vector<double>& u,
 
     // Bottom boundary row — only if this process is on bottom edge
     if (on_bottom) {
-        for (int j = 0; j <= local_cols + 1; j++) {
-            int global_col = col_offset + j - 1;
-            if (global_col < 0 || global_col > N + 1) continue;
+        for (int j = 1; j <= local_cols; j++) {
+            int global_col = col_offset + j;
             double x = (double)global_col / (N + 1);
             u[IDX(local_rows + 1, j)] = sin(PI * x);
         }
     }
 
     // Left boundary column — only if this process is on left edge
+    // This includes ghost rows (i=0 and i=local_rows+1) for corner consistency
     if (on_left)
         for (int i = 0; i <= local_rows + 1; i++)
             u[IDX(i, 0)] = 0.0;
@@ -112,10 +112,10 @@ double compute_max_error_local_2d(const std::vector<double>& u,
                                    int row_offset, int col_offset, int N) {
     double max_err = 0.0;
     for (int i = 1; i <= local_rows; i++) {
-        int global_row = row_offset + i - 1;  // Local row 1 -> global row row_offset
+        int global_row = row_offset + i;  // Local row 1 -> global row row_offset + 1
         double y = 1.0 - (double)global_row / (double)(N + 1);
         for (int j = 1; j <= local_cols; j++) {
-            int global_col = col_offset + j - 1;  // Local col 1 -> global col col_offset
+            int global_col = col_offset + j;  // Local col 1 -> global col col_offset + 1
             double x = (double)global_col / (N + 1);
             double analytical = sin(PI * x) * exp(-PI * y);
             double err = std::abs(u[IDX(i, j)] - analytical);
