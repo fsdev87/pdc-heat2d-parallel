@@ -1,0 +1,54 @@
+======================================
+V4 Hybrid 2D MPI+OpenMP Solver
+Grid size   : 1024 x 1024
+MPI ranks   : 4
+Process grid: 2 x 2
+Block size  : 512 x 512
+OMP threads : 2
+Total cores : 8
+Mode        : fixed 2000000 iterations
+======================================
+  iter 5000 / 2000000
+  iter 1995000 / 2000000
+======================================
+Iterations  : 2000000
+Time        : 728.664691 seconds
+Max error   : 0.000027 (vs analytical)
+======================================
+CSV: v4,1024,4,2,728.664691,2000000,0.000027
+======================================
+V4 Hybrid 2D MPI+OpenMP Solver
+Grid size   : 1024 x 1024
+MPI ranks   : 4
+Process grid: 2 x 2
+Block size  : 512 x 512
+OMP threads : 4
+Total cores : 16
+Mode        : fixed 2000000 iterations
+======================================
+  iter 5000 / 2000000
+  iter 1995000 / 2000000
+======================================
+Iterations  : 2000000
+Time        : 888.367550 seconds
+Max error   : 0.000027 (vs analytical)
+======================================
+CSV: v4,1024,4,4,888.367550,2000000,0.000027
+======================================
+V4 Hybrid 2D MPI+OpenMP Solver
+Grid size   : 1024 x 1024
+MPI ranks   : 8
+Process grid: 4 x 2
+Block size  : 256 x 512
+OMP threads : 2
+Total cores : 16
+Mode        : fixed 2000000 iterations
+======================================
+  iter 5000 / 2000000
+  iter 1995000 / 2000000
+======================================
+Iterations  : 2000000
+Time        : 493.620821 seconds
+Max error   : 0.000027 (vs analytical)
+======================================
+CSV: v4,1024,8,2,493.620821,2000000,0.000027

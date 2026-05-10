@@ -1,0 +1,64 @@
+======================================
+V1 MPI Blocking Jacobi Solver
+Grid size   : 1024 x 1024
+Processes   : 1
+Rows/rank   : 1024
+Mode        : fixed 2000000 iterations
+======================================
+  iter 5000 / 2000000
+  iter 1995000 / 2000000
+======================================
+Mode        : fixed-iters
+Iterations  : 2000000
+Time        : 1895.363040 seconds
+Max error   : 0.000027 (vs analytical)
+======================================
+CSV: v1,1024,1,1,1895.363040,2000000,0.000027
+======================================
+V1 MPI Blocking Jacobi Solver
+Grid size   : 1024 x 1024
+Processes   : 2
+Rows/rank   : 512
+Mode        : fixed 2000000 iterations
+======================================
+  iter 5000 / 2000000
+  iter 1995000 / 2000000
+======================================
+Mode        : fixed-iters
+Iterations  : 2000000
+Time        : 1014.575701 seconds
+Max error   : 0.000027 (vs analytical)
+======================================
+CSV: v1,1024,2,1,1014.575701,2000000,0.000027
+======================================
+V1 MPI Blocking Jacobi Solver
+Grid size   : 1024 x 1024
+Processes   : 4
+Rows/rank   : 256
+Mode        : fixed 2000000 iterations
+======================================
+  iter 5000 / 2000000
+  iter 1995000 / 2000000
+======================================
+Mode        : fixed-iters
+Iterations  : 2000000
+Time        : 570.752275 seconds
+Max error   : 0.000027 (vs analytical)
+======================================
+CSV: v1,1024,4,1,570.752275,2000000,0.000027
+======================================
+V1 MPI Blocking Jacobi Solver
+Grid size   : 1024 x 1024
+Processes   : 8
+Rows/rank   : 128
+Mode        : fixed 2000000 iterations
+======================================
+  iter 5000 / 2000000
+  iter 1995000 / 2000000
+======================================
+Mode        : fixed-iters
+Iterations  : 2000000
+Time        : 345.157653 seconds
+Max error   : 0.000027 (vs analytical)
+======================================
+CSV: v1,1024,8,1,345.157653,2000000,0.000027

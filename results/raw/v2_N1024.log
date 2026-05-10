@@ -1,0 +1,64 @@
+======================================
+V2 MPI Non-Blocking Jacobi Solver
+Grid size   : 1024 x 1024
+Processes   : 1
+Rows/rank   : 1024
+Overlap     : YES
+Mode        : fixed 2000000 iterations
+======================================
+  iter 5000 / 2000000
+  iter 1995000 / 2000000
+======================================
+Iterations  : 2000000
+Time        : 1841.980108 seconds
+Max error   : 0.000027 (vs analytical)
+======================================
+CSV: v2,1024,1,1,1841.980108,2000000,0.000027
+======================================
+V2 MPI Non-Blocking Jacobi Solver
+Grid size   : 1024 x 1024
+Processes   : 2
+Rows/rank   : 512
+Overlap     : YES
+Mode        : fixed 2000000 iterations
+======================================
+  iter 5000 / 2000000
+  iter 1995000 / 2000000
+======================================
+Iterations  : 2000000
+Time        : 993.781398 seconds
+Max error   : 0.000027 (vs analytical)
+======================================
+CSV: v2,1024,2,1,993.781398,2000000,0.000027
+======================================
+V2 MPI Non-Blocking Jacobi Solver
+Grid size   : 1024 x 1024
+Processes   : 4
+Rows/rank   : 256
+Overlap     : YES
+Mode        : fixed 2000000 iterations
+======================================
+  iter 5000 / 2000000
+  iter 1995000 / 2000000
+======================================
+Iterations  : 2000000
+Time        : 556.368231 seconds
+Max error   : 0.000027 (vs analytical)
+======================================
+CSV: v2,1024,4,1,556.368231,2000000,0.000027
+======================================
+V2 MPI Non-Blocking Jacobi Solver
+Grid size   : 1024 x 1024
+Processes   : 8
+Rows/rank   : 128
+Overlap     : YES
+Mode        : fixed 2000000 iterations
+======================================
+  iter 5000 / 2000000
+  iter 1995000 / 2000000
+======================================
+Iterations  : 2000000
+Time        : 332.523773 seconds
+Max error   : 0.000027 (vs analytical)
+======================================
+CSV: v2,1024,8,1,332.523773,2000000,0.000027

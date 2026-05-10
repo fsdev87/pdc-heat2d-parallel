@@ -40,13 +40,13 @@
 #include <iostream>
 #include <vector>
 #include <cmath>
-#include <mpi/mpi.h>
+#include <mpi.h>
 #include <iomanip>
 #include <algorithm>
 #include <string>
 
 const double PI       = M_PI;
-const int    MAX_ITER = 500000;
+const int    MAX_ITER = 2000000;
 
 #define IDX(i, j) ((i) * (N + 2) + (j))
 

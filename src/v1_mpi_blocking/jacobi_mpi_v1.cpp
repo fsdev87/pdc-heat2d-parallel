@@ -60,14 +60,14 @@
 #include <iostream>
 #include <vector>
 #include <cmath>
-#include <mpi/mpi.h>
+#include <mpi.h>
 #include <iomanip>
 #include <algorithm>
 #include <string>
 
 // ---- Constants ----
 const double PI       = M_PI;
-const int    MAX_ITER = 500000;
+const int    MAX_ITER = 2000000;
 
 // ---- Grid access macro ----
 // Local grid is (local_rows + 2) x (N + 2), stored flat row-major

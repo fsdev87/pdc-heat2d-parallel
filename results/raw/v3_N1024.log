@@ -1,0 +1,32 @@
+======================================
+V3 MPI 2D Cartesian Jacobi Solver
+Grid size   : 1024 x 1024
+Processes   : 4
+Process grid: 2 x 2
+Block size  : 512 x 512
+Mode        : fixed 2000000 iterations
+======================================
+  iter 5000 / 2000000
+  iter 1995000 / 2000000
+======================================
+Iterations  : 2000000
+Time        : 542.065251 seconds
+Max error   : 0.000027 (vs analytical)
+======================================
+CSV: v3,1024,4,1,542.065251,2000000,0.000027
+======================================
+V3 MPI 2D Cartesian Jacobi Solver
+Grid size   : 1024 x 1024
+Processes   : 8
+Process grid: 4 x 2
+Block size  : 256 x 512
+Mode        : fixed 2000000 iterations
+======================================
+  iter 5000 / 2000000
+  iter 1995000 / 2000000
+======================================
+Iterations  : 2000000
+Time        : 322.506545 seconds
+Max error   : 0.000027 (vs analytical)
+======================================
+CSV: v3,1024,8,1,322.506545,2000000,0.000027

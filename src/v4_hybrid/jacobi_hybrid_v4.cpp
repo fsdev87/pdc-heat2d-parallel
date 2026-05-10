@@ -38,13 +38,13 @@
 #include <iostream>
 #include <vector>
 #include <cmath>
-#include <mpi/mpi.h>
+#include <mpi.h>
 #include <omp.h>
 #include <iomanip>
 #include <algorithm>
 
 const double PI       = M_PI;
-const int    MAX_ITER = 500000;
+const int    MAX_ITER = 2000000;
 
 // Local grid width = local_cols + 2 (including ghost columns)
 #define IDX(i, j) ((i) * (local_cols + 2) + (j))

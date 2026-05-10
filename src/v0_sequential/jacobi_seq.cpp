@@ -68,7 +68,7 @@
 
 // ---- Constants ----
 const double PI      = M_PI;
-const int    MAX_ITER = 500000;
+const int    MAX_ITER = 2000000;
 
 // ---- Grid access macro (row-major flat array) ----
 // Grid dimensions are (N+2) x (N+2)
