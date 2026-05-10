@@ -76,3 +76,8 @@ CLUSTER_SETUP_GUIDE.md
 QUICKSTART.md
 SOLUTION.md
 VERIFICATION_GUIDE.md
+
+# Other files
+*.pdf
+*.tex
+hostfile
