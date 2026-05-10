@@ -10,20 +10,27 @@
 # GENERIC RUN:
 #   make test VERSION=v0 N=256
 #   make test VERSION=v1 N=1024 PROCS=4 FIXED_ITERS=5000
-#   make test VERSION=v1 N=1024 PROCS=8 FIXED_ITERS=5000     <- cluster
-#   make test VERSION=v1 N=1024 PROCS=16 FIXED_ITERS=5000    <- oversubscribed
+#   make test VERSION=v1 N=1024 PROCS=8 FIXED_ITERS=5000 MODE=cluster    <- cluster
+#   make test VERSION=v1 N=1024 PROCS=8 FIXED_ITERS=5000 MODE=oversubscribe <- oversubscribe
+#   make test VERSION=v1 N=1024 PROCS=16 FIXED_ITERS=5000                 <- oversubscribe only (default)
+#   make test VERSION=v1 N=1024 PROCS=16 FIXED_ITERS=5000 MODE=cluster    <- cluster + oversubscribe
 #   make test VERSION=v4 N=1024 PROCS=2 THREADS=2 FIXED_ITERS=5000
 #
-# PROCESS COUNT RULES:
-#   PROCS=1,2,4  -> local on your machine
-#   PROCS=8      -> cluster via hostfile (try at university)
-#   PROCS=16     -> --oversubscribe (context switching, no cluster needed)
+# PROCESS COUNT & MODE RULES:
+#   PROCS=1,2,4  -> local (no MODE needed)
+#   PROCS=8      -> MODE=cluster (default) or MODE=oversubscribe
+#   PROCS=16     -> MODE=oversubscribe (default) or MODE=cluster (cluster + oversubscribe)
+#
+# MODE OPTIONS:
+#   MODE=auto           -> use defaults above
+#   MODE=cluster        -> use hostfile (always adds oversubscribe for PROCS>8)
+#   MODE=oversubscribe  -> use --oversubscribe flag only
 #
 # SHORTCUTS:
-#   make correctness N=256                         verify V0 vs V1
+#   make correctness N=256                         verify all versions
 #   make bench-local N=1024 FIXED_ITERS=5000       benchmark PROCS=1,2,4
-#   make bench-cluster N=1024 FIXED_ITERS=5000     benchmark PROCS=8
-#   make bench-oversubscribe N=1024 FIXED_ITERS=5000  PROCS=16
+#   make bench-cluster N=1024 FIXED_ITERS=5000     benchmark PROCS=8 on cluster
+#   make bench-oversubscribe N=1024 FIXED_ITERS=5000  PROCS=8,16 oversubscribed
 # ============================================================
 
 CXX_SEQ  = g++
@@ -49,9 +56,10 @@ VERSION     ?= v0
 N           ?= 256
 PROCS       ?= 1
 THREADS     ?= 1
-TOL         ?= 1e-6
+TOL         ?= 1e-7
 FIXED_ITERS ?= -1
 HOSTFILE    ?= hostfile
+MODE        ?= auto
 
 # ============================================================
 # BUILD
@@ -101,37 +109,57 @@ ifeq ($(VERSION),v0)
 	@$(V0_BIN) $(N) $(TOL) $(FIXED_ITERS) 2>&1 | tee -a results/raw/$(VERSION)_N$(N).log
 else ifeq ($(VERSION),v4)
 	@if [ $(PROCS) -gt 8 ]; then \
-		echo "--- V4 | N=$(N) | PROCS=$(PROCS) [oversubscribed] | THREADS=$(THREADS) ---"; \
-		OMP_NUM_THREADS=$(THREADS) mpirun -np $(PROCS) --oversubscribe $(V4_BIN) $(N) $(TOL) $(FIXED_ITERS) 2>&1 | tee -a results/raw/$(VERSION)_N$(N).log; \
+		if [ "$(MODE)" = "cluster" ]; then \
+			echo "--- V4 | N=$(N) | PROCS=$(PROCS) [cluster + oversubscribe] | THREADS=$(THREADS) ---"; \
+			OMP_NUM_THREADS=$(THREADS) mpirun -np $(PROCS) --hostfile $(HOSTFILE) --oversubscribe $(V4_BIN) $(N) $(TOL) $(FIXED_ITERS) 2>&1 | tee -a results/raw/$(VERSION)_N$(N).log; \
+		else \
+			echo "--- V4 | N=$(N) | PROCS=$(PROCS) [oversubscribed] | THREADS=$(THREADS) ---"; \
+			OMP_NUM_THREADS=$(THREADS) mpirun -np $(PROCS) --oversubscribe $(V4_BIN) $(N) $(TOL) $(FIXED_ITERS) 2>&1 | tee -a results/raw/$(VERSION)_N$(N).log; \
+		fi \
 	elif [ $(PROCS) -gt 4 ]; then \
-		echo "--- V4 | N=$(N) | PROCS=$(PROCS) [cluster] | THREADS=$(THREADS) ---"; \
-		OMP_NUM_THREADS=$(THREADS) mpirun -np $(PROCS) --hostfile $(HOSTFILE) $(V4_BIN) $(N) $(TOL) $(FIXED_ITERS) 2>&1 | tee -a results/raw/$(VERSION)_N$(N).log; \
+		if [ "$(MODE)" = "oversubscribe" ]; then \
+			echo "--- V4 | N=$(N) | PROCS=$(PROCS) [oversubscribed] | THREADS=$(THREADS) ---"; \
+			OMP_NUM_THREADS=$(THREADS) mpirun -np $(PROCS) --oversubscribe $(V4_BIN) $(N) $(TOL) $(FIXED_ITERS) 2>&1 | tee -a results/raw/$(VERSION)_N$(N).log; \
+		else \
+			echo "--- V4 | N=$(N) | PROCS=$(PROCS) [cluster] | THREADS=$(THREADS) ---"; \
+			OMP_NUM_THREADS=$(THREADS) mpirun -np $(PROCS) --hostfile $(HOSTFILE) $(V4_BIN) $(N) $(TOL) $(FIXED_ITERS) 2>&1 | tee -a results/raw/$(VERSION)_N$(N).log; \
+		fi \
 	else \
 		echo "--- V4 | N=$(N) | PROCS=$(PROCS) [local] | THREADS=$(THREADS) ---"; \
 		OMP_NUM_THREADS=$(THREADS) mpirun -np $(PROCS) $(V4_BIN) $(N) $(TOL) $(FIXED_ITERS) 2>&1 | tee -a results/raw/$(VERSION)_N$(N).log; \
 	fi
 else
 	@if [ $(PROCS) -gt 8 ]; then \
-		echo "--- $(VERSION) | N=$(N) | PROCS=$(PROCS) [oversubscribed] ---"; \
-		mpirun -np $(PROCS) --oversubscribe build/$(subst v,,$(VERSION))/jacobi_$(VERSION) $(N) $(TOL) $(FIXED_ITERS) 2>&1 | tee -a results/raw/$(VERSION)_N$(N).log; \
+		if [ "$(MODE)" = "cluster" ]; then \
+			echo "--- $(VERSION) | N=$(N) | PROCS=$(PROCS) [cluster + oversubscribe] ---"; \
+			mpirun -np $(PROCS) --hostfile $(HOSTFILE) --oversubscribe build/$(VERSION)/jacobi_$(VERSION) $(N) $(TOL) $(FIXED_ITERS) 2>&1 | tee -a results/raw/$(VERSION)_N$(N).log; \
+		else \
+			echo "--- $(VERSION) | N=$(N) | PROCS=$(PROCS) [oversubscribed] ---"; \
+			mpirun -np $(PROCS) --oversubscribe build/$(VERSION)/jacobi_$(VERSION) $(N) $(TOL) $(FIXED_ITERS) 2>&1 | tee -a results/raw/$(VERSION)_N$(N).log; \
+		fi \
 	elif [ $(PROCS) -gt 4 ]; then \
-		echo "--- $(VERSION) | N=$(N) | PROCS=$(PROCS) [cluster] ---"; \
-		mpirun -np $(PROCS) --hostfile $(HOSTFILE) build/$(subst v,,$(VERSION))/jacobi_$(VERSION) $(N) $(TOL) $(FIXED_ITERS) 2>&1 | tee -a results/raw/$(VERSION)_N$(N).log; \
+		if [ "$(MODE)" = "oversubscribe" ]; then \
+			echo "--- $(VERSION) | N=$(N) | PROCS=$(PROCS) [oversubscribed] ---"; \
+			mpirun -np $(PROCS) --oversubscribe build/$(VERSION)/jacobi_$(VERSION) $(N) $(TOL) $(FIXED_ITERS) 2>&1 | tee -a results/raw/$(VERSION)_N$(N).log; \
+		else \
+			echo "--- $(VERSION) | N=$(N) | PROCS=$(PROCS) [cluster] ---"; \
+			mpirun -np $(PROCS) --hostfile $(HOSTFILE) build/$(VERSION)/jacobi_$(VERSION) $(N) $(TOL) $(FIXED_ITERS) 2>&1 | tee -a results/raw/$(VERSION)_N$(N).log; \
+		fi \
 	else \
 		echo "--- $(VERSION) | N=$(N) | PROCS=$(PROCS) [local] ---"; \
-		mpirun -np $(PROCS) build/$(subst v,,$(VERSION))/jacobi_$(VERSION) $(N) $(TOL) $(FIXED_ITERS) 2>&1 | tee -a results/raw/$(VERSION)_N$(N).log; \
+		mpirun -np $(PROCS) build/$(VERSION)/jacobi_$(VERSION) $(N) $(TOL) $(FIXED_ITERS) 2>&1 | tee -a results/raw/$(VERSION)_N$(N).log; \
 	fi
 endif
 
 # ============================================================
-# CORRECTNESS: compare V0 vs V1 on same N
+# CORRECTNESS: compare all versions on same N, same procs
 # Usage: make correctness N=256
 # ============================================================
 .PHONY: correctness
-correctness: v0 v1
+correctness: v0 v1 v2 v3 v4
 	@echo "============================================"
 	@echo "Correctness Check | N=$(N) | TOL=$(TOL)"
-	@echo "All max_error values should be similar"
+	@echo "All iterations should match, errors should be similar"
 	@echo "============================================"
 	@echo "[V0 Sequential]"
 	@$(V0_BIN) $(N) $(TOL) 2>&1 | grep -E "Iterations|Time|Max error"
@@ -141,6 +169,20 @@ correctness: v0 v1
 	@mpirun -np 2 $(V1_BIN) $(N) $(TOL) 2>&1 | grep -E "Iterations|Time|Max error"
 	@echo "[V1 NP=4]"
 	@mpirun -np 4 $(V1_BIN) $(N) $(TOL) 2>&1 | grep -E "Iterations|Time|Max error"
+	@echo "[V2 NP=1]"
+	@mpirun -np 1 $(V2_BIN) $(N) $(TOL) 2>&1 | grep -E "Iterations|Time|Max error"
+	@echo "[V2 NP=2]"
+	@mpirun -np 2 $(V2_BIN) $(N) $(TOL) 2>&1 | grep -E "Iterations|Time|Max error"
+	@echo "[V2 NP=4]"
+	@mpirun -np 4 $(V2_BIN) $(N) $(TOL) 2>&1 | grep -E "Iterations|Time|Max error"
+	@echo "[V3 NP=4] (requires 2x2 grid)"
+	@mpirun -np 4 $(V3_BIN) $(N) $(TOL) 2>&1 | grep -E "Iterations|Time|Max error"
+	@echo "[V4 NP=1 THREADS=1]"
+	@OMP_NUM_THREADS=1 mpirun -np 1 $(V4_BIN) $(N) $(TOL) 2>&1 | grep -E "Iterations|Time|Max error"
+	@echo "[V4 NP=2 THREADS=2]"
+	@OMP_NUM_THREADS=2 mpirun -np 2 $(V4_BIN) $(N) $(TOL) 2>&1 | grep -E "Iterations|Time|Max error"
+	@echo "[V4 NP=4 THREADS=1]"
+	@OMP_NUM_THREADS=1 mpirun -np 4 $(V4_BIN) $(N) $(TOL) 2>&1 | grep -E "Iterations|Time|Max error"
 	@echo "============================================"
 
 # ============================================================
@@ -186,17 +228,21 @@ bench-cluster: v1 v2 v3 v4
 	@echo "Done. Results in results/raw/bench_cluster.csv"
 
 # ============================================================
-# BENCH-OVERSUBSCRIBE: PROCS=16 with context switching
+# BENCH-OVERSUBSCRIBE: PROCS=8,16 with context switching
 # Usage: make bench-oversubscribe N=1024 FIXED_ITERS=5000
 # ============================================================
 .PHONY: bench-oversubscribe
-bench-oversubscribe: v1 v2 v3
+bench-oversubscribe: v1 v2 v3 v4
 	@mkdir -p results/raw
-	@echo "=== Oversubscribed Benchmark | N=$(N) | NP=16 ==="
+	@echo "=== Oversubscribed Benchmark | N=$(N) | NP=8,16 ==="
 	@for v in v1 v2 v3; do \
-		echo "--- $$v NP=16 [oversubscribed] ---"; \
-		mpirun -np 16 --oversubscribe build/$${v#v}/jacobi_$$v $(N) $(TOL) $(FIXED_ITERS) 2>&1 | grep "^CSV:" | sed 's/CSV: //' | tee -a results/raw/bench_oversubscribe.csv; \
+		for p in 8 16; do \
+			echo "--- $$v NP=$$p [oversubscribed] ---"; \
+			mpirun -np $$p --oversubscribe build/$${v#v}/jacobi_$$v $(N) $(TOL) $(FIXED_ITERS) 2>&1 | grep "^CSV:" | sed 's/CSV: //' | tee -a results/raw/bench_oversubscribe.csv; \
+		done; \
 	done
+	@echo "--- V4 NP=8 THREADS=1 ---"
+	@OMP_NUM_THREADS=1 mpirun -np 8 --oversubscribe $(V4_BIN) $(N) $(TOL) $(FIXED_ITERS) 2>&1 | grep "^CSV:" | sed 's/CSV: //' | tee -a results/raw/bench_oversubscribe.csv
 	@echo "Done. Results in results/raw/bench_oversubscribe.csv"
 
 # ============================================================
@@ -223,7 +269,9 @@ help:
 	@echo "BUILD:  make all | make v0 | make v1 | make v2 | make v3 | make v4"
 	@echo ""
 	@echo "TEST:   make test VERSION=v1 N=1024 PROCS=4 FIXED_ITERS=5000"
-	@echo "        PROCS=1,2,4  -> local    PROCS=8 -> cluster    PROCS=16 -> oversubscribed"
+	@echo "        PROCS=1,2,4  -> local (no MODE needed)"
+	@echo "        PROCS=8      -> MODE=cluster (default) or MODE=oversubscribe"
+	@echo "        PROCS=16     -> MODE=oversubscribe (default) or MODE=cluster (+oversubscribe)"
 	@echo ""
 	@echo "CHECK:  make correctness N=256"
 	@echo ""

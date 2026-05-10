@@ -48,13 +48,13 @@
 //   mpirun -np 4 ./jacobi_v1 <N> [tol] [fixed_iters]
 //
 //   Correctness test (tolerance mode):
-//     mpirun -np 4 ./jacobi_v1 256 1e-6
+//     mpirun -np 4 ./jacobi_v1 256 1e-7
 //
 //   Performance test (fixed iteration mode):
-//     mpirun -np 1 ./jacobi_v1 1024 1e-6 5000
-//     mpirun -np 2 ./jacobi_v1 1024 1e-6 5000
-//     mpirun -np 4 ./jacobi_v1 1024 1e-6 5000
-//     mpirun -np 8 ./jacobi_v1 1024 1e-6 5000
+//     mpirun -np 1 ./jacobi_v1 1024 1e-7 5000
+//     mpirun -np 2 ./jacobi_v1 1024 1e-7 5000
+//     mpirun -np 4 ./jacobi_v1 1024 1e-7 5000
+//     mpirun -np 8 ./jacobi_v1 1024 1e-7 5000
 // ============================================================
 
 #include <iostream>
@@ -67,7 +67,7 @@
 
 // ---- Constants ----
 const double PI       = M_PI;
-const int    MAX_ITER = 300000;
+const int    MAX_ITER = 500000;
 
 // ---- Grid access macro ----
 // Local grid is (local_rows + 2) x (N + 2), stored flat row-major
@@ -276,19 +276,19 @@ int main(int argc, char* argv[]) {
 
     // ---- Parse arguments ----
     int    N           = 256;
-    double tol         = 1e-6;
+    double tol         = 1e-7;
     int    fixed_iters = -1;   // -1 = tolerance mode, >0 = fixed iteration mode
 
     if (rank == 0) {
         if (argc < 2) {
             std::cerr << "Usage: mpirun -np P " << argv[0]
                       << " <N> [tol] [fixed_iters]" << std::endl;
-            std::cerr << "  Correctness: mpirun -np 4 " << argv[0] << " 256 1e-6" << std::endl;
-            std::cerr << "  Benchmark:   mpirun -np 4 " << argv[0] << " 1024 1e-6 5000" << std::endl;
+            std::cerr << "  Correctness: mpirun -np 4 " << argv[0] << " 256 1e-7" << std::endl;
+            std::cerr << "  Benchmark:   mpirun -np 4 " << argv[0] << " 1024 1e-7 5000" << std::endl;
             MPI_Abort(MPI_COMM_WORLD, 1);
         }
         N           = std::stoi(argv[1]);
-        tol         = (argc >= 3) ? std::stod(argv[2]) : 1e-6;
+        tol         = (argc >= 3) ? std::stod(argv[2]) : 1e-7;
         fixed_iters = (argc >= 4) ? std::stoi(argv[3]) : -1;
 
         if (N % num_procs != 0) {

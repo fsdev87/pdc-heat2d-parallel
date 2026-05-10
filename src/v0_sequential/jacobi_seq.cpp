@@ -48,8 +48,8 @@
 // HOW TO RUN:
 //   ./jacobi_seq <grid_size> [tolerance] [fixed_iters]
 //   Example: ./jacobi_seq 256
-//   Example: ./jacobi_seq 1024 1e-6
-//   Example: ./jacobi_seq 1024 1e-6 5000  (fixed iteration mode for benchmarking)
+//   Example: ./jacobi_seq 1024 1e-7
+//   Example: ./jacobi_seq 1024 1e-7 5000  (fixed iteration mode for benchmarking)
 //
 // EXECUTION MODES:
 //   Tolerance mode (default):  run until max_delta < tol
@@ -68,7 +68,7 @@
 
 // ---- Constants ----
 const double PI      = M_PI;
-const int    MAX_ITER = 100000;
+const int    MAX_ITER = 500000;
 
 // ---- Grid access macro (row-major flat array) ----
 // Grid dimensions are (N+2) x (N+2)
@@ -213,12 +213,12 @@ int main(int argc, char* argv[]) {
     if (argc < 2) {
         std::cerr << "Usage: " << argv[0] << " <grid_size> [tolerance] [fixed_iters]" << std::endl;
         std::cerr << "Example: " << argv[0] << " 256 1e-4" << std::endl;
-        std::cerr << "Example: " << argv[0] << " 1024 1e-6 5000  (fixed iteration mode)" << std::endl;
+        std::cerr << "Example: " << argv[0] << " 1024 1e-7 5000  (fixed iteration mode)" << std::endl;
         return 1;
     }
 
     int    N           = std::stoi(argv[1]);
-    double tol         = (argc >= 3) ? std::stod(argv[2]) : 1e-6;
+    double tol         = (argc >= 3) ? std::stod(argv[2]) : 1e-7;
     int    fixed_iters = (argc >= 4) ? std::stoi(argv[3]) : -1;  // -1 = tolerance mode
 
     std::cout << "======================================" << std::endl;

@@ -31,13 +31,13 @@
 //
 // HOW TO RUN:
 //   # 2 MPI ranks x 2 threads each (total 4 cores)
-//   OMP_NUM_THREADS=2 mpirun -np 2 ./jacobi_v4 1024 1e-6 5000
+//   OMP_NUM_THREADS=2 mpirun -np 2 ./jacobi_v4 1024 1e-7 5000
 //
 //   # 1 MPI rank x 4 threads (all local, no MPI comm)
-//   OMP_NUM_THREADS=4 mpirun -np 1 ./jacobi_v4 1024 1e-6 5000
+//   OMP_NUM_THREADS=4 mpirun -np 1 ./jacobi_v4 1024 1e-7 5000
 //
 //   # 4 MPI ranks x 1 thread (same as pure MPI, for comparison)
-//   OMP_NUM_THREADS=1 mpirun -np 4 ./jacobi_v4 1024 1e-6 5000
+//   OMP_NUM_THREADS=1 mpirun -np 4 ./jacobi_v4 1024 1e-7 5000
 //
 // EXPERIMENT CONFIGURATIONS (all using 4 total cores):
 //   NP=1, THREADS=4  -> max thread sharing, zero MPI comm
@@ -55,7 +55,7 @@
 #include <string>
 
 const double PI       = M_PI;
-const int    MAX_ITER = 300000;
+const int    MAX_ITER = 500000;
 
 #define IDX(i, j) ((i) * (N + 2) + (j))
 
@@ -176,7 +176,7 @@ int main(int argc, char* argv[]) {
     MPI_Comm_size(MPI_COMM_WORLD, &num_procs);
 
     int    N           = 256;
-    double tol         = 1e-6;
+    double tol         = 1e-7;
     int    fixed_iters = -1;
 
     if (rank == 0) {
@@ -184,11 +184,11 @@ int main(int argc, char* argv[]) {
             std::cerr << "Usage: OMP_NUM_THREADS=T mpirun -np P " << argv[0]
                       << " <N> [tol] [fixed_iters]" << std::endl;
             std::cerr << "Example: OMP_NUM_THREADS=2 mpirun -np 2 " << argv[0]
-                      << " 1024 1e-6 5000" << std::endl;
+                      << " 1024 1e-7 5000" << std::endl;
             MPI_Abort(MPI_COMM_WORLD, 1);
         }
         N           = std::stoi(argv[1]);
-        tol         = (argc >= 3) ? std::stod(argv[2]) : 1e-6;
+        tol         = (argc >= 3) ? std::stod(argv[2]) : 1e-7;
         fixed_iters = (argc >= 4) ? std::stoi(argv[3]) : -1;
         if (N % num_procs != 0) {
             std::cerr << "Error: N must be divisible by num_procs" << std::endl;

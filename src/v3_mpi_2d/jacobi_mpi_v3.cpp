@@ -39,8 +39,8 @@
 //   OR: make v3
 //
 // HOW TO RUN:
-//   Correctness: mpirun -np 4 ./jacobi_v3 256 1e-6
-//   Benchmark:   mpirun -np 4 ./jacobi_v3 1024 1e-6 5000
+//   Correctness: mpirun -np 4 ./jacobi_v3 256 1e-7
+//   Benchmark:   mpirun -np 4 ./jacobi_v3 1024 1e-7 5000
 //
 // NOTE: num_procs must produce a valid 2D grid where N is divisible
 //       by both dims[0] and dims[1]. For safety use power-of-2 process counts.
@@ -55,7 +55,7 @@
 #include <string>
 
 const double PI       = M_PI;
-const int    MAX_ITER = 300000;
+const int    MAX_ITER = 500000;
 
 // Local grid width = local_cols + 2 (including left/right ghost/boundary cols)
 #define IDX(i, j) ((i) * (local_cols + 2) + (j))
@@ -210,7 +210,7 @@ int main(int argc, char* argv[]) {
     MPI_Comm_size(MPI_COMM_WORLD, &num_procs);
 
     int    N           = 256;
-    double tol         = 1e-6;
+    double tol         = 1e-7;
     int    fixed_iters = -1;
 
     if (rank == 0) {
@@ -220,7 +220,7 @@ int main(int argc, char* argv[]) {
             MPI_Abort(MPI_COMM_WORLD, 1);
         }
         N           = std::stoi(argv[1]);
-        tol         = (argc >= 3) ? std::stod(argv[2]) : 1e-6;
+        tol         = (argc >= 3) ? std::stod(argv[2]) : 1e-7;
         fixed_iters = (argc >= 4) ? std::stoi(argv[3]) : -1;
     }
 

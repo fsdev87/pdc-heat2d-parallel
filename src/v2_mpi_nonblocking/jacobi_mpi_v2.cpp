@@ -33,8 +33,8 @@
 //   OR: make v2
 //
 // HOW TO RUN:
-//   Correctness: mpirun -np 4 ./jacobi_v2 256 1e-6
-//   Benchmark:   mpirun -np 4 ./jacobi_v2 1024 1e-6 5000
+//   Correctness: mpirun -np 4 ./jacobi_v2 256 1e-7
+//   Benchmark:   mpirun -np 4 ./jacobi_v2 1024 1e-7 5000
 // ============================================================
 
 #include <iostream>
@@ -46,7 +46,7 @@
 #include <string>
 
 const double PI       = M_PI;
-const int    MAX_ITER = 300000;
+const int    MAX_ITER = 500000;
 
 #define IDX(i, j) ((i) * (N + 2) + (j))
 
@@ -185,7 +185,7 @@ int main(int argc, char* argv[]) {
     MPI_Comm_size(MPI_COMM_WORLD, &num_procs);
 
     int    N           = 256;
-    double tol         = 1e-6;
+    double tol         = 1e-7;
     int    fixed_iters = -1;
 
     if (rank == 0) {
@@ -195,7 +195,7 @@ int main(int argc, char* argv[]) {
             MPI_Abort(MPI_COMM_WORLD, 1);
         }
         N           = std::stoi(argv[1]);
-        tol         = (argc >= 3) ? std::stod(argv[2]) : 1e-6;
+        tol         = (argc >= 3) ? std::stod(argv[2]) : 1e-7;
         fixed_iters = (argc >= 4) ? std::stoi(argv[3]) : -1;
         if (N % num_procs != 0) {
             std::cerr << "Error: N must be divisible by num_procs" << std::endl;
