@@ -112,10 +112,10 @@ double compute_max_error_local_2d(const std::vector<double>& u,
                                    int row_offset, int col_offset, int N) {
     double max_err = 0.0;
     for (int i = 1; i <= local_rows; i++) {
-        int global_row = row_offset + i;
+        int global_row = row_offset + i - 1;  // Local row 1 -> global row row_offset
         double y = 1.0 - (double)global_row / (double)(N + 1);
         for (int j = 1; j <= local_cols; j++) {
-            int global_col = col_offset + j;
+            int global_col = col_offset + j - 1;  // Local col 1 -> global col col_offset
             double x = (double)global_col / (N + 1);
             double analytical = sin(PI * x) * exp(-PI * y);
             double err = std::abs(u[IDX(i, j)] - analytical);
@@ -143,32 +143,25 @@ int jacobi_solve_mpi_2d(std::vector<double>& u, int N, double tol,
         iter++;
         double local_delta = 0.0;
 
-        // --- Ghost exchange: rows (north/south) ---
-        // Send top interior row north, receive ghost from north into row 0
-        MPI_Sendrecv(&u[IDX(1, 0)],           local_cols + 2, MPI_DOUBLE, north, 0,
-                     &u[IDX(0, 0)],           local_cols + 2, MPI_DOUBLE, north, 1,
-                     cart_comm, MPI_STATUS_IGNORE);
+        // --- Non-blocking ghost exchange: 4 directions ---
+        MPI_Request reqs[8];  // 4 receives + 4 sends
 
-        // Send bottom interior row south, receive ghost from south
-        MPI_Sendrecv(&u[IDX(local_rows, 0)],     local_cols + 2, MPI_DOUBLE, south, 1,
-                     &u[IDX(local_rows + 1, 0)], local_cols + 2, MPI_DOUBLE, south, 0,
-                     cart_comm, MPI_STATUS_IGNORE);
+        // Post receives FIRST (always before sends for deadlock avoidance)
+        MPI_Irecv(&u[IDX(0, 0)],              local_cols + 2, MPI_DOUBLE, north, 1, cart_comm, &reqs[0]);  // north ghost row
+        MPI_Irecv(&u[IDX(local_rows + 1, 0)], local_cols + 2, MPI_DOUBLE, south, 0, cart_comm, &reqs[1]);  // south ghost row
+        MPI_Irecv(&u[IDX(1, 0)],              1, col_type, west,  3, cart_comm, &reqs[2]);  // west ghost col
+        MPI_Irecv(&u[IDX(1, local_cols + 1)], 1, col_type, east,  2, cart_comm, &reqs[3]);  // east ghost col
 
-        // --- Ghost exchange: columns (east/west) ---
-        // col_type describes a column: local_rows elements spaced (local_cols+2) apart
-        // Send leftmost interior col west, receive ghost col from west into col 0
-        MPI_Sendrecv(&u[IDX(1, 1)],           1, col_type, west,  2,
-                     &u[IDX(1, 0)],           1, col_type, west,  3,
-                     cart_comm, MPI_STATUS_IGNORE);
+        // Post sends
+        MPI_Isend(&u[IDX(1, 0)],           local_cols + 2, MPI_DOUBLE, north, 0, cart_comm, &reqs[4]);  // send north
+        MPI_Isend(&u[IDX(local_rows, 0)],  local_cols + 2, MPI_DOUBLE, south, 1, cart_comm, &reqs[5]);  // send south
+        MPI_Isend(&u[IDX(1, 1)],           1, col_type, west,  2, cart_comm, &reqs[6]);  // send west
+        MPI_Isend(&u[IDX(1, local_cols)],  1, col_type, east,  3, cart_comm, &reqs[7]);  // send east
 
-        // Send rightmost interior col east, receive ghost col from east
-        MPI_Sendrecv(&u[IDX(1, local_cols)],  1, col_type, east,  3,
-                     &u[IDX(1, local_cols+1)],1, col_type, east,  2,
-                     cart_comm, MPI_STATUS_IGNORE);
-
-        // --- Compute all interior cells ---
-        for (int i = 1; i <= local_rows; i++) {
-            for (int j = 1; j <= local_cols; j++) {
+        // OVERLAP: compute interior cells that don't depend on ghost data
+        // Cells in [2..local_rows-1] × [2..local_cols-1] don't need ghost values
+        for (int i = 2; i <= local_rows - 1; i++) {
+            for (int j = 2; j <= local_cols - 1; j++) {
                 double val = (u[IDX(i-1, j)] +
                               u[IDX(i+1, j)] +
                               u[IDX(i, j-1)] +
@@ -179,7 +172,75 @@ int jacobi_solve_mpi_2d(std::vector<double>& u, int N, double tol,
             }
         }
 
+        // Wait for all communication to complete
+        MPI_Waitall(8, reqs, MPI_STATUSES_IGNORE);
+
+        // Now compute edge cells that needed ghost data
+        // Top edge (row 1, cols 1..local_cols)
+        for (int j = 1; j <= local_cols; j++) {
+            double val = (u[IDX(0, j)] +
+                          u[IDX(2, j)] +
+                          u[IDX(1, j-1)] +
+                          u[IDX(1, j+1)]) * 0.25;
+            u_new[IDX(1, j)] = val;
+            double delta = std::abs(val - u[IDX(1, j)]);
+            if (delta > local_delta) local_delta = delta;
+        }
+
+        // Bottom edge (row local_rows, cols 1..local_cols)
+        for (int j = 1; j <= local_cols; j++) {
+            double val = (u[IDX(local_rows-1, j)] +
+                          u[IDX(local_rows+1, j)] +
+                          u[IDX(local_rows, j-1)] +
+                          u[IDX(local_rows, j+1)]) * 0.25;
+            u_new[IDX(local_rows, j)] = val;
+            double delta = std::abs(val - u[IDX(local_rows, j)]);
+            if (delta > local_delta) local_delta = delta;
+        }
+
+        // Left edge (rows 2..local_rows-1, col 1) - corners already done
+        for (int i = 2; i <= local_rows - 1; i++) {
+            double val = (u[IDX(i-1, 1)] +
+                          u[IDX(i+1, 1)] +
+                          u[IDX(i, 0)] +
+                          u[IDX(i, 2)]) * 0.25;
+            u_new[IDX(i, 1)] = val;
+            double delta = std::abs(val - u[IDX(i, 1)]);
+            if (delta > local_delta) local_delta = delta;
+        }
+
+        // Right edge (rows 2..local_rows-1, col local_cols) - corners already done
+        for (int i = 2; i <= local_rows - 1; i++) {
+            double val = (u[IDX(i-1, local_cols)] +
+                          u[IDX(i+1, local_cols)] +
+                          u[IDX(i, local_cols-1)] +
+                          u[IDX(i, local_cols+1)]) * 0.25;
+            u_new[IDX(i, local_cols)] = val;
+            double delta = std::abs(val - u[IDX(i, local_cols)]);
+            if (delta > local_delta) local_delta = delta;
+        }
+
+        // Corners (still need these if local_rows >= 2 and local_cols >= 2)
+        if (local_rows >= 2 && local_cols >= 2) {
+            // Top-left corner (1, 1) - already done in top edge loop
+            // Top-right corner (1, local_cols) - already done in top edge loop
+            // Bottom-left corner (local_rows, 1) - already done in bottom edge loop
+            // Bottom-right corner (local_rows, local_cols) - already done in bottom edge loop
+        }
+
         std::swap(u, u_new);
+
+        // Preserve boundary values: copy from u_new (old u) to u (new grid)
+        // After swap, u_new contains the previous iteration's grid with correct boundaries
+        // u contains the newly computed values but zero boundaries
+        for (int j = 0; j <= local_cols + 1; j++) {
+            u[IDX(0, j)] = u_new[IDX(0, j)];  // Top boundary (row 0)
+            u[IDX(local_rows + 1, j)] = u_new[IDX(local_rows + 1, j)];  // Bottom boundary
+        }
+        for (int i = 0; i <= local_rows + 1; i++) {
+            u[IDX(i, 0)] = u_new[IDX(i, 0)];  // Left boundary (col 0)
+            u[IDX(i, local_cols + 1)] = u_new[IDX(i, local_cols + 1)];  // Right boundary
+        }
 
         if (use_fixed) {
             if (iter >= fixed_iters) break;
