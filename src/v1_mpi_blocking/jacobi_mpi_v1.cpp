@@ -60,7 +60,7 @@
 #include <iostream>
 #include <vector>
 #include <cmath>
-#include <mpi.h>
+#include <mpi/mpi.h>
 #include <iomanip>
 #include <algorithm>
 #include <string>

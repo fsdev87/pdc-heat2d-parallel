@@ -38,7 +38,7 @@
 #include <iostream>
 #include <vector>
 #include <cmath>
-#include <mpi.h>
+#include <mpi/mpi.h>
 #include <omp.h>
 #include <iomanip>
 #include <algorithm>
